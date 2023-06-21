@@ -1,10 +1,10 @@
-package internal_test
+package auth
 
 /*
 // alter to your testable OIDC infrastructure before uncommenting
-func ExampleReqOIDCPassAuth() {
+func ExampleReqOIDCPass() {
 
-	grant, err := internal.ReqOIDCPassAuth(
+	grant, err := auth.ReqOIDCPass(
 		`rwxrob`, `password`,
 		`https://home.rwx.gg:8443/realms/k8s`,
 		`minikube`, `x46aVnFlygaEdHBom1200AZm37ZTWPhe`,
@@ -17,7 +17,6 @@ func ExampleReqOIDCPassAuth() {
 
 	fmt.Println(grant[`token_type`])
 	fmt.Println(grant[`scope`])
-	//rresp.Print()
 
 	// Output:
 	// Bearer

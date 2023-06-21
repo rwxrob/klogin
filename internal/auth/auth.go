@@ -1,4 +1,4 @@
-package internal
+package auth
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 )
 
-// ReqOIDCPassAuth grants an authenticatio token suitable for logging
+// ReqOIDCPass grants an authentication token suitable for logging
 // into Kubernetes by making an OIDC Resource Owner Password Flow
 // request to the OIDC issuer URL (iurl). The token is returned along
 // with the other response data as a map[string]any.
@@ -21,7 +21,7 @@ import (
 // .well-known/openid-configuration endpoint will be
 // queried to discover the token URL and other data.
 //
-// Client ID (cid) is passed das client_id to issuer URL (iurl)
+// Client ID (cid) is passed as client_id to issuer URL (iurl)
 // identifiying an OIDC supporting application.
 //
 // Client secret (csec) is only required if the OIDC client
@@ -29,7 +29,7 @@ import (
 // the ClientSecret is required even though---depending on the auth
 // flow---it is not necessarily a "secret" and can be safely embedded in
 // application source code.
-func ReqOIDCPassAuth(user, pass, iurl, cid, csec string) (map[string]any, error) {
+func ReqOIDCPass(user, pass, iurl, cid, csec string) (map[string]any, error) {
 
 	params := url.Values{}
 	params.Add("grant_type", "password")
@@ -73,10 +73,10 @@ func ReqOIDCPassAuth(user, pass, iurl, cid, csec string) (map[string]any, error)
 		return nil, fmt.Errorf("failed to read OIDC password token response for %q", user)
 	}
 
-	rresp := new(map[string]any)
-	if err := json.Unmarshal(buf, rresp); err != nil {
+	data := new(map[string]any)
+	if err := json.Unmarshal(buf, data); err != nil {
 		return nil, err
 	}
 
-	return *rresp, nil
+	return *data, nil
 }
