@@ -4,82 +4,81 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/rwxrob/kubectl-login/internal"
+	"github.com/rwxrob/kubectl-login/internal/auth"
+	"github.com/rwxrob/kubectl-login/internal/clusters"
+	"github.com/rwxrob/kubectl-login/internal/kubeconf"
+	"github.com/rwxrob/kubectl-login/internal/run"
 )
-
-const reminder = `
-Updated config file: %v
-Cluster CA file:     %v
-Dashboard:
-  1) kubectl proxy
-  2) http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
-
-`
 
 func main() {
 
-	home, _ := os.UserHomeDir()
-	kubedir := filepath.Join(home, `.kube`)
-	kubeconfig := filepath.Join(kubedir, `config`)
-
-	os.Mkdir(kubedir, 0755)
-
-	cluster := `prod` // default
+	dir := kubeconf.Dir()
+	os.Mkdir(dir, 0755)
+	contexts := kubeconf.Contexts()
+	current := kubeconf.CurContextName()
 
 	if len(os.Args) > 1 {
-		cluster = os.Args[1]
-	} else {
-		current := strings.TrimSpace(internal.OutQuiet(`kubectl`, `config`, `current-context`))
-		if current != "" {
-			cluster = current
+		current = os.Args[1]
+	}
+
+	if current == "" {
+		current = `prod`
+	}
+
+	context, hascontext := contexts[current]
+	cluster, hascluster := clusters.Map[current]
+
+	if !hascontext && !hascluster {
+		log.Fatalf(`unable to locate info for context/cluster: %v`, current)
+	}
+
+	if !hascontext && hascluster {
+		context = kubeconf.Context{
+			Name:      current,
+			Cluster:   current,
+			User:      current,
+			Namespace: run.Prompt(`Username: `),
 		}
 	}
 
-	ci, has := internal.Clusters[cluster]
-	if !has {
-		log.Fatalf(`unable to locate info for cluster: %v`, cluster)
+	if hascontext && !hascluster {
+		log.Fatalf(`context (%v) unsupported by this login plugin`, current)
 	}
 
-	fmt.Printf("Please enter login information for '%v' cluster:\n", cluster)
-
-	user := internal.Prompt(`Username: `)
-	pass := internal.PromptHidden(`Password: `)
-	fmt.Println()
+	pass := run.PromptHidden(`Password: `)
 	fmt.Println()
 
-	grant, err := internal.ReqOIDCPassAuth(
-		user, pass, ci.OIDCIssuerURL, ci.ClientID, ci.ClientSecret,
+	grant, err := auth.ReqOIDCPass(
+		context.Namespace, pass, cluster.OIDCIssuerURL, cluster.ClientID, cluster.ClientSecret,
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	cafile := filepath.Join(kubedir, cluster+`.crt`)
-	if err := os.WriteFile(cafile, ci.CA, 0600); err != nil {
+	cafile, err := os.CreateTemp(``, `kubectl-login`)
+	cert := cafile.Name()
+	defer os.Remove(cert)
+	if _, err := cafile.Write(cluster.CA); err != nil {
 		log.Fatalf(`failed attempting to write cert to %v`, cafile)
 	}
 
-	internal.Exec(`kubectl`, `config`, `set-cluster`, ci.Name,
-		`--server`, ci.APIServerURL,
-		`--certificate-authority`, cafile,
+	run.Exec(`kubectl`, `config`, `set-cluster`, cluster.Name,
+		`--server`, cluster.APIServerURL,
+		`--certificate-authority`, cert,
 		`--embed-certs`,
 	)
 
-	internal.Exec(
-		`kubectl`, `config`, `set-context`, ci.Name,
-		`--cluster`, ci.Name,
-		`--user`, ci.Name,
-		`--namespace`, user, // some may prefer `default`
+	run.Exec(
+		`kubectl`, `config`, `set-context`, context.Name,
+		`--cluster`, cluster.Name,
+		`--user`, context.User,
+		`--namespace`, context.Namespace,
 	)
 
-	internal.Exec(`kubectl`, `config`, `use-context`, ci.Name)
+	run.Exec(`kubectl`, `config`, `use-context`, context.Name)
 
 	token, _ := grant[`id_token`].(string)
-	internal.Exec(`kubectl`, `config`, `set-credentials`, ci.Name, `--token`, token)
-
-	fmt.Printf(reminder, kubeconfig, cafile)
+	run.Exec(`kubectl`, `config`, `set-credentials`, context.User, `--token`, token)
 
 }

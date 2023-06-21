@@ -15,9 +15,9 @@ var DevCA []byte
 //go:embed inf.crt
 var InfCA []byte
 
-// Clusters contains a hard-coded list of cluster information with URLs
+// Map contains a hard-coded list of cluster information with URLs
 // for authentication, the API, and all OIDC information.
-var Clusters = map[string]Cluster{
+var Map = map[string]Cluster{
 
 	`prod`: Cluster{
 		Name:          `prod`,

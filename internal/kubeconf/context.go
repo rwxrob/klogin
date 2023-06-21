@@ -2,6 +2,7 @@ package kubeconf
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 
@@ -20,6 +21,23 @@ type Context struct {
 	User      string // referred to as AuthInfo elsewhere
 	Namespace string
 }
+
+// JSON outputs the Context as JSON (null if <nil>). Errors during
+// unmashaling are logged and null returned.
+func (c *Context) JSON() string {
+	if c == nil {
+		return `null`
+	}
+	byt, err := json.Marshal(c)
+	if err != nil {
+		log.Print(err)
+		return `null`
+	}
+	return string(byt)
+}
+
+func (c *Context) Print() { fmt.Println(c.JSON()) }
+func (c *Context) Log()   { log.Println(c.JSON()) }
 
 // CurContextName returns only the name of the current context. See
 // CurContext if the entire Context struct is wanted instead.
@@ -45,6 +63,11 @@ func Contexts() map[string]Context {
 
 	out := run.OutQuiet(`kubectl`, `config`, `view`, `-o`, `jsonpath={.contexts}`)
 
+	// 🤬  fix k8s bug that returns "<nil>" instead of "null"
+	if out == `<nil>` {
+		out = `null`
+	}
+
 	// slice of "named context" structs
 	holder := []struct {
 		Name    string
@@ -57,7 +80,6 @@ func Contexts() map[string]Context {
 
 	err := json.Unmarshal([]byte(out), &holder)
 	if err != nil {
-		log.Print(err)
 		return contexts
 	}
 
