@@ -1,9 +1,6 @@
 # Customizable `kubectl-login` plugin
 
-Clone from template and make custom changes to the following to match your multi-cluster environment:
-
-* `intern/clusters`
-* `intern/certs`
+Clone from template and make custom changes to `internal/clusters` package.
 
 ## Considerations
 
