@@ -21,10 +21,25 @@ type Context struct {
 	Namespace string
 }
 
-func CurContext() string {
+// CurContextName returns only the name of the current context. See
+// CurContext if the entire Context struct is wanted instead.
+func CurContextName() string {
 	return strings.TrimSpace(run.OutQuiet(`kubectl`, `config`, `current-context`))
 }
 
+// CurContext returns the Context object from Contexts for the
+// CurContextName or a nil if not found.
+func CurContext() *Context {
+	ctx, has := Contexts()[CurContextName()]
+	if !has {
+		return nil
+	}
+	return &ctx
+}
+
+// Contexts safely returns all the current user contexts (normally
+// returned from kubectl config get-contexts) as a map by parsing the
+// kubectl view config -o jsonpath='jsonpath={.contexts}' output.
 func Contexts() map[string]Context {
 	contexts := map[string]Context{}
 

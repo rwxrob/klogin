@@ -6,9 +6,14 @@ import (
 	"github.com/rwxrob/kubectl-login/internal/kubeconf"
 )
 
-func ExampleCurContext() {
-	fmt.Println(kubeconf.CurContext())
+func ExampleCurContextName() {
+	fmt.Println(kubeconf.CurContextName())
+	// Output:
+	// prod
+}
 
+func ExampleCurContext() {
+	fmt.Println(kubeconf.CurContext().Name)
 	// Output:
 	// prod
 }
