@@ -1,0 +1,17 @@
+name: Build
+on:
+  push:
+
+jobs:
+  build:
+    name: Build with latest Go
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Build it
+        run: go build -v
