@@ -21,7 +21,7 @@ var Map = map[string]Cluster{
 
 	`prod`: Cluster{
 		Name:          `prod`,
-		APIServerURL:  `https://prod.home.rwx.gg:8443`,
+		APIServerURL:  `https://192.168.39.251:8443`,
 		OIDCIssuerURL: `https://home.rwx.gg:8443/realms/prod`,
 		ClientID:      `minikube-prod`,
 		ClientSecret:  `x46aVnFlygaEdHBom1200AZm37ZTWPhe`,
@@ -30,7 +30,7 @@ var Map = map[string]Cluster{
 
 	`dev`: Cluster{
 		Name:          `dev`,
-		APIServerURL:  `https://192.168.50.117:8443`,
+		APIServerURL:  `https://192.168.50.73:8443`,
 		OIDCIssuerURL: `https://home.rwx.gg:8443/realms/dev`,
 		ClientID:      `minikube-dev`,
 		ClientSecret:  `12l3IMNHqDvqpp5gm0292g1Hs7SzWgyX`,
@@ -39,7 +39,7 @@ var Map = map[string]Cluster{
 
 	`inf`: Cluster{
 		Name:          `inf`,
-		APIServerURL:  `https://192.168.61.20:8443`,
+		APIServerURL:  `https://192.168.61.234:8443`,
 		OIDCIssuerURL: `https://home.rwx.gg:8443/realms/inf`,
 		ClientID:      `minikube-inf`,
 		ClientSecret:  `6yw8EH1dVAx9XYKTM2mK2FZZmFhD19Hz`,
