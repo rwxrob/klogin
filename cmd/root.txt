@@ -45,6 +45,11 @@ command similar to the following:
 The target cluster (after the @ sign) must be kept consistent with the
 Cluster column.
 
+The --user flag (followed by just the username) can also be passed to
+klogin without any arguments as a convenient alternative to that longer
+kubectl config command. Similarly, the --namespace option allows
+simultaneously changing the namespace of the current context as well.
+
 The password is always entered from an interactive prompt but the
 characters of the password are not echoed to the screen, nor are any
 stars echoed to the screen while entering the password. This program
@@ -53,13 +58,15 @@ Note that if a username is passed as an argument that only the password
 as standard input is read and can therefore reliably be expected (if
 passed from a pipe, etc.)
 
-The Namespace of a context is never updated but it is created with a new
-reserved context is created for the first time. When logging in for the
-first time to one of the above reserved cluster names a context is
-created with the initial Namespace set to match the username (instead of
-"default").
+The Namespace of a context is never altered (unless explicitly requested
+with --namespace) but is always created when a new reserved context is
+added for the first time. In this case, the initial Namespace is set to
+match the username (instead of "default"). Note that this can be changed
+any number of ways after the fact enabling a context to persistently
+refer to a namespace other than that of the user.
 
 The "completion" and "help" argument actions are also supported. Tab
-completion can be enabled in the usual ways, for example:
+completion for bash, zsh, fish, and powershell can be enabled in the
+usual ways (same as for kubectl), for example:
 
     source <(klogin completion bash)
