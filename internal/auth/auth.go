@@ -5,11 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/rwxrob/klogin/internal/clusters"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 // ReqOIDCPass grants an authentication token suitable for logging
@@ -79,4 +83,84 @@ func ReqOIDCPass(user, pass, iurl, cid, csec string) (map[string]any, error) {
 	}
 
 	return *data, nil
+}
+
+// ParseTarget takes either an unqualified cluster name or a qualified
+// name combined with a username prefix separated by an at sign (ex:
+// user@prod).
+func ParseTarget(in string) (uname, clname string) {
+	it := strings.SplitN(in, `@`, 2)
+	switch len(it) {
+	case 2:
+		clname = it[1]
+		uname = it[0]
+	case 1:
+		clname = it[0]
+	}
+	return
+}
+
+// LoginROPC logs a user inferred from conf.Contexts[conf.CurrentContext]
+// .AuthInfo into that cluster using the clusters.Map to provide the
+// authentication data required. The CurrentContext must therefore
+// always be set and the AuthInfo to which it points must always be of
+// the form user@cluster. An error is returned if any of these
+// requirements is not met.
+//
+// The method of logging is uses the OIDC/OAuth2 Resource Owner Password
+// Credentials flow (grant_type=password, known as "direct access" in
+// Keycloak). Returns an error if that cluster isn't supported (not in
+// clusters.Names).  Saves the id_token (not access_token, per
+// Kubernetes official documentation) from the JWT returned by the OIDC
+// issuer into the users/credentials/AuthInfo section of the appropriate
+// KUBECONFIG file by passing an official api.Config struct to
+// clientcmd.ModifyConf (the only official supported way to update
+// configuration files in a way identical to kubectl). The reserved
+// context (named after the reserved cluster name) is always created or
+// updated and persisted as well.
+func LoginROPC(conf *api.Config, pass string) error {
+
+	ctx, has := conf.Contexts[conf.CurrentContext]
+	if !has {
+		return fmt.Errorf(`unable to infer target user and cluster`)
+	}
+
+	uname, clname := ParseTarget(ctx.AuthInfo)
+	cl, has := clusters.Map[clname]
+	if !has {
+		return fmt.Errorf(`unsupported cluster: %v`, clname)
+	}
+
+	// first ensure we get a successful login before persisting anything
+
+	grant, err := ReqOIDCPass(
+		uname, pass, cl.OIDCIssuerURL, cl.ClientID, cl.ClientSecret,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	token, isstring := grant[`id_token`].(string)
+	if !isstring {
+		log.Fatal(`id_token not found or is not a string`)
+	}
+
+	// add/update the cluster api.Config entry
+
+	cluster := api.NewCluster()
+	cluster.Server = cl.APIServerURL
+	cluster.CertificateAuthorityData = cl.CA
+	conf.Clusters[cl.Name] = cluster
+
+	// update/add the user@cluster user/credential/AuthInfo entry
+
+	delete(conf.AuthInfos, cl.Name) // cleanup old, unqualified entries
+	authinfo := api.NewAuthInfo()
+	authinfo.Token = token
+	authinfoid := strings.Join([]string{uname, cl.Name}, `@`)
+	conf.AuthInfos[authinfoid] = authinfo
+
+	// save modified configuration
+
+	o := clientcmd.NewDefaultPathOptions()
+	return clientcmd.ModifyConfig(o, *conf, true)
 }
