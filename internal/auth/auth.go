@@ -107,17 +107,17 @@ func ParseTarget(in string) (uname, clname string) {
 // the form user@cluster. An error is returned if any of these
 // requirements is not met.
 //
-// The method of logging is uses the OIDC/OAuth2 Resource Owner Password
-// Credentials flow (grant_type=password, known as "direct access" in
-// Keycloak). Returns an error if that cluster isn't supported (not in
-// clusters.Names).  Saves the id_token (not access_token, per
-// Kubernetes official documentation) from the JWT returned by the OIDC
-// issuer into the users/credentials/AuthInfo section of the appropriate
-// KUBECONFIG file by passing an official api.Config struct to
-// clientcmd.ModifyConf (the only official supported way to update
-// configuration files in a way identical to kubectl). The reserved
-// context (named after the reserved cluster name) is always created or
-// updated and persisted as well.
+// The OIDC/OAuth2 Resource Owner Password Credentials flow
+// (grant_type=password, known as "direct access" in Keycloak) is used
+// to authenticate and grant a JWT token. Returns an error if that
+// cluster is not in clusters.Names.  Saves the id_token (not
+// access_token, per Kubernetes official documentation) from the JWT
+// returned by the OIDC issuer into the users/credentials/AuthInfo
+// section of the appropriate KUBECONFIG file by passing an official
+// api.Config struct to clientcmd.ModifyConf (the only official
+// supported way to update configuration files consistent with kubectl
+// behavior). The reserved context (named after the reserved cluster
+// name) is always created, updated, and persisted as well.
 func LoginROPC(conf *api.Config, pass string) error {
 
 	ctx, has := conf.Contexts[conf.CurrentContext]

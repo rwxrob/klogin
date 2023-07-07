@@ -2,6 +2,4 @@ package main
 
 import "github.com/rwxrob/klogin/cmd"
 
-func main() {
-	cmd.Execute()
-}
+func main() { cmd.Execute() }

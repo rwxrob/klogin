@@ -6,7 +6,7 @@ import (
 
 var completionCmd = &cobra.Command{
 	Use:       "completion [SHELL]",
-	Short:     "Prints shell completion scripts",
+	Short:     "Prints shell completion scripts to be sourced",
 	ValidArgs: []string{"bash", "zsh", "fish", "powershell"},
 	Annotations: map[string]string{
 		"commandType": "main",
