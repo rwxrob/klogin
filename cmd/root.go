@@ -15,13 +15,19 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
+var version = `v0.3.0`
+
 //go:embed root.txt
 var description string // easier to maintain in its own file
+
+// set from StringVar flags
+var userName, namespace string
 
 var rootCmd = &cobra.Command{
 	Use:               `klogin [USER@CLUSTER|CLUSTER]`,
 	Short:             `Login to prod, dev, or inf clusters as specific user`,
 	Long:              description,
+	Version:           version,
 	Args:              cobra.MaximumNArgs(1),
 	ValidArgsFunction: rootComplete,
 
@@ -72,6 +78,10 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf(`invalid arguments: %v`, args)
 		}
 
+		if len(userName) != 0 {
+			uname = userName
+		}
+
 		if len(clname) == 0 {
 			clname = clusters.Default
 		}
@@ -94,6 +104,10 @@ var rootCmd = &cobra.Command{
 
 		if len(ctx.Namespace) == 0 {
 			ctx.Namespace = uname
+		}
+
+		if len(namespace) != 0 {
+			ctx.Namespace = namespace
 		}
 
 		conf.Contexts[clname] = ctx
@@ -172,6 +186,8 @@ func rootComplete(cmd *cobra.Command, args []string, in string) ([]string, cobra
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	rootCmd.PersistentFlags().StringVar(&userName, "user", "", "Username to use for login")
+	rootCmd.PersistentFlags().StringVar(&namespace, "namespace", "", "Namespace to use for context")
 	rootCmd.AddCommand(completionCmd)
 	err := rootCmd.Execute()
 	if err != nil {
