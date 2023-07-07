@@ -15,6 +15,13 @@ var DevCA []byte
 //go:embed inf.crt
 var InfCA []byte
 
+// Names contains the keys from the Map for convenience.
+var Names = []string{`prod`, `dev`, `inf`}
+
+// Default is the default cluster name to use if none is specified or
+// available from the current context.
+var Default = `prod`
+
 // Map contains a hard-coded list of cluster information with URLs
 // for authentication, the API, and all OIDC information.
 var Map = map[string]Cluster{

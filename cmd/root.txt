@@ -1,0 +1,65 @@
+klogin logs an existing Kubernetes user into one of the following
+managed clusters and updates the user's KUBECONFIG file(s) by adding or
+updating the cluster, user (AuthInfo, "credential"), and context
+sections.
+
+    prod - production (default)
+    dev  - development
+    inf  - internal infrastructure management
+
+Most users simply use no arguments which observes the current context or
+default ("prod").
+
+Note that the above context and cluster identifiers are reserved for
+anything that uses this klogin command. klogin does, however, respect
+KUBECONFIG (like kubectl) in order to point to a different configuration
+when needed. Any context with one of these names is deleted or updated
+without warning. (Any context with any *other* name is ignored.)
+
+If no argument is passed, klogin assumes the current context. If the
+user (AuthInfo) of the current context does not end with one of the
+above identifiers the program fails with an "unsupported" error (in
+which case klogin can be tried again with an argument to correct the
+error).  If no current context is set then klogin assumes the "prod"
+cluster and context.
+
+If an argument is passed and is one of the supported cluster/context
+names then that is used and becomes the current context.  Passing this
+argument is facilitated with tab completion indicating which values are
+valid.  If a cluster/context with that name exists in the configuration
+then the user credentials (AuthInfo) for that context are used. If
+cluster/context does not exist then it is created. When a new context is
+created the user credentials (AuthInfo) is set to the username and
+target reserved cluster name (ex: user@prod). Old, unqualified (no
+@ sign) user AuthInfo entries for the above reserved cluster names are
+also detected and deleted.
+
+The AuthInfo column always contains the name of the user last used to
+login. When not found the user is prompted to type it in. Only one
+active, logged-in user per reserved context/cluster is supported. To
+change the currently active user for a given content entry use a kubectl
+command similar to the following:
+
+    kubectl config set-context --current --user otheruser@prod
+
+The target cluster (after the @ sign) must be kept consistent with the
+Cluster column.
+
+The password is always entered from an interactive prompt but the
+characters of the password are not echoed to the screen, nor are any
+stars echoed to the screen while entering the password. This program
+always blocks waiting for that standard input every time it is executed.
+Note that if a username is passed as an argument that only the password
+as standard input is read and can therefore reliably be expected (if
+passed from a pipe, etc.)
+
+The Namespace of a context is never updated but it is created with a new
+reserved context is created for the first time. When logging in for the
+first time to one of the above reserved cluster names a context is
+created with the initial Namespace set to match the username (instead of
+"default").
+
+The "completion" and "help" argument actions are also supported. Tab
+completion can be enabled in the usual ways, for example:
+
+    source <(klogin completion bash)
