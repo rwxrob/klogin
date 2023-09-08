@@ -9,6 +9,7 @@ import (
 	"github.com/rwxrob/klogin/internal/auth"
 	"github.com/rwxrob/klogin/internal/clusters"
 	"github.com/rwxrob/klogin/internal/run"
+	"github.com/rwxrob/klogin/internal/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
 	cli "k8s.io/cli-runtime/pkg/genericclioptions"
@@ -105,13 +106,22 @@ var rootCmd = &cobra.Command{
 
 		// --------------  end of cleaning up CurrentContext -------------
 
-		pass := run.PromptHidden(`Password: `)
-		fmt.Println()
+		fmt.Printf(
+			"Please obtain a token from the following URL and paste it here:\n%v\n",
+			clusters.Map[clname].LoginURL,
+		)
 
-		// LoginROPC depends heavily on CurrentContext updated and pointing
+		byt, err := util.ReadBytesFromTerm(`*`, 10, 4096)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println()
+		token := strings.TrimSpace(string(byt))
+
+		// LoginAuth depends heavily on CurrentContext updated and pointing
 		// to valid, supported clusters in memory
 
-		if err = auth.LoginROPC(&conf, pass); err != nil {
+		if err = auth.LoginAuth(&conf, token); err != nil {
 			return err
 		}
 

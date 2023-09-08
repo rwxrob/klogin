@@ -6,6 +6,7 @@ package clusters
 // requesting id_tokens for use in K8S OIDC authentication.
 type Cluster struct {
 	Name          string
+	LoginURL      string
 	APIServerURL  string
 	OIDCIssuerURL string
 	DefNamespace  string

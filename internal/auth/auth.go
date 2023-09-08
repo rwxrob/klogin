@@ -164,3 +164,45 @@ func LoginROPC(conf *api.Config, pass string) error {
 	o := clientcmd.NewDefaultPathOptions()
 	return clientcmd.ModifyConfig(o, *conf, true)
 }
+
+// LoginAuth saves the token into the kubeconfig file using the same
+// methods as the kubectl program itself. The token should be obtained
+// by interactively prompting the user to paste or otherwise provide the
+// token obtained from a web browser that has completed the standard
+// Oauth2 standard user authentication flow. The conf.CurrentContext
+// must be set and the AuthInfo to which it points must always be of the
+// form user@cluster. An error is returned if any of these requirements
+// is not met.
+func LoginAuth(conf *api.Config, token string) error {
+
+	ctx, has := conf.Contexts[conf.CurrentContext]
+	if !has {
+		return fmt.Errorf(`unable to infer target user and cluster`)
+	}
+
+	uname, clname := ParseTarget(ctx.AuthInfo)
+	cl, has := clusters.Map[clname]
+	if !has {
+		return fmt.Errorf(`unsupported cluster: %v`, clname)
+	}
+
+	// add/update the cluster api.Config entry
+
+	cluster := api.NewCluster()
+	cluster.Server = cl.APIServerURL
+	cluster.CertificateAuthorityData = cl.CA
+	conf.Clusters[cl.Name] = cluster
+
+	// update/add the user@cluster user/credential/AuthInfo entry
+
+	delete(conf.AuthInfos, cl.Name) // cleanup old, unqualified entries
+	authinfo := api.NewAuthInfo()
+	authinfo.Token = token
+	authinfoid := strings.Join([]string{uname, cl.Name}, `@`)
+	conf.AuthInfos[authinfoid] = authinfo
+
+	// save modified configuration
+
+	o := clientcmd.NewDefaultPathOptions()
+	return clientcmd.ModifyConfig(o, *conf, true)
+}
